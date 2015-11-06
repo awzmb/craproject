@@ -1,0 +1,16 @@
+Grundlegende Fragestellung / Daten:
+	-> Für jeden Testuser, für jeden Testdatensatz (5 insgesamt), für jede Variation
+	von k (7 Werte verwenden) eine über die User aggregierte ROC-Kurve bilden (insgesamt
+	7 ROC Kurven)
+		=> Für welches k bekommen wir das beste Ergebnis
+		
+Anweisungen:
+	-> Für jeden Testdatensatz soll ein separates Ranking erstellt werden (t1User, t2User, etc.)
+	-> t1User enthält UserIDs -> für diese UserIDs sollen die gesamten Daten aus data gezogen werden
+	-> Statt wie im Skript angegeben sollen nicht zufällig 5 Werte ausgewählt, sondern nur die
+	5-Sterne-Bewertungen aus t1User, t2User, etc. verwendet werden
+		
+Letzte Fragestellung:
+	-> Welche Filme werden für welchen k-Wert empfohlen?
+
+	
