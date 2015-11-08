@@ -52,7 +52,7 @@ t1RankingList = rank(-t1SelectedItems, na.last = "keep")
 FPR = ((sort(t1RankingList) - (1:length(t1RankingList)))/(10-length(t1RankingList)))
 FPR = c(0,FPR,1)
 
-#Vektor mit "False Positive Rates" erzeugen
+#Vektor mit "True Positive Rates" erzeugen
 TPR = (1:length(t1RankingList))/length(t1RankingList)
 TPR = c(0,TPR,1)
 
