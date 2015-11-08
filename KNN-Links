@@ -1,0 +1,17 @@
+(Nützliche) Links für k-nearest neighbour (knn) Algorithmus:
+
+Algorithmus Standard-Aufbau:
+http://www.inside-r.org/r-doc/class/knn
+https://cran.r-project.org/web/packages/class/class.pdf
+
+
+Anwendungsbeispiele:
+
+Recommendation with KNN
+https://rpubs.com/ferranmt/80166
+
+KNN example in R
+https://rpubs.com/ranjitmishra/123438
+
+Cancer Prediction - ab "Modelling using the book’s data partition and kNN"
+https://rpubs.com/jesuscastagnetto/caret-knn-cancer-prediction
