@@ -7,9 +7,14 @@ Grundlegende Fragestellung / Daten:
 Anweisungen:
 	-> Für jeden Testdatensatz soll ein separates Ranking erstellt werden (t1User, t2User, etc.)
 	-> t1User enthält UserIDs -> für diese UserIDs sollen die gesamten Daten aus data gezogen werden
-	-> Statt wie im Skript angegeben sollen nicht zufällig 5 Werte ausgewählt, sondern nur die
-	5-Sterne-Bewertungen aus t1User, t2User, etc. verwendet werden
-		
+	-> Statt wie im Skript angegeben sollen nicht zufällig 5 Werte ausgewählt, sondern nur die 5-Sterne-Bewertungen aus t1User, t2User, etc. verwendet werden
+	
+	-> t1Active erstellen:
+	    -> Vektor mit NA erstellen der so lang ist wie t1Spearman für alle User aus t1Training
+	    -> t1User mit data über UserID verbinden um Bewertungen in den Vektor zu kriegen (1-5)
+	    -> Restliche fehlende Elemente aus t1User als NA-Items verwenden
+	    -> Auffüllen mit NA bis die Länge t1Spearman erreicht ist
+	
 Letzte Fragestellung:
 	-> Welche Filme werden für welchen k-Wert empfohlen?
 

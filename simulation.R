@@ -5,32 +5,75 @@ names(data) <- c("UserID", "ItemID", "Rating", "Timestamp")
 item <- read.table(file = "ML100k/u.item.csv", sep = ";")
 names(item) <- c("ItemID", "Name")
 
-t1User <- read.table(file = "ML100k/u1.user.items.test.csv", sep = ";")
-names(t1User) <- c("UserID", "Rated5")
+t1User <- as.matrix(read.table(file = "ML100k/u1.user.items.test.csv", sep = ";"))
+#names(t1User) <- c("UserID", "Rated5")
+#UserID (erste Spalte) als Rownames verwenden
+#rownames(t1User) <- t1User[,1]
+#t1User <- t1User[,-1]
 
 #Relevante UserIDs
 t1Training <- read.table(file = "ML100k/u1.user.training.csv", sep = ";")
 names(t1Training) <- c("UserID")
 
 #Relevante UserIDs per merge filtern (Verbinden von data mit t1Training)
-#t1data <- merge(data, t1Training, by = "UserID")
-#t1data$Timestamp <- NULL
+t1Data <- merge(data, t1Training, by = "UserID")
+t1Data$Timestamp <- NULL
 
 #xtab erstellen -> Rating als Wert, UserID als y, ItemID als x
-dataXtab <- xtabs(Rating ~ UserID + ItemID, data)
+t1DataXtab <- xtabs(Rating ~ UserID + ItemID, t1Data)
 #Matrix aus xtab erstellen (korrekte Anzeige als Matrix in R)
-class(dataXtab) = "matrix"
+class(t1DataXtab) = "matrix"
 #Nullwerte durch NA ersetzen
-dataXtab[dataXtab==0]=NA
-
-#Vektor mit Bewertungen für User 2 erstellen
-t1Active <- dataXtab[2,]
+t1DataXtab[t1DataXtab == 0] = NA
 
 #Ähnlichkeitsmatrix berechnen (Spearman)
-t1Spearman <- cor(dataXtab, use = "pairwise.complete.obs", method="spearman")
+t1Spearman <- cor(t1DataXtab, use = "pairwise.complete.obs", method="spearman")
 
 #Diagonale der Ähnlichkeitsmatrix durch NA ersetzen (Ähnlichkeit der Diagonale logischerweise 1,00)
 diag(t1Spearman) = NA
+
+
+# Xtab aus u.data erstellen um daraus t1Active zu ziehen
+
+# (ACHTUNG: Anzahl Columns nicht identisch -> muss abgeschnitten werden)
+#xtab erstellen -> Rating als Wert, UserID als y, ItemID als x
+DataXtab <- xtabs(Rating ~ UserID + ItemID, data)
+#Matrix aus xtab erstellen (korrekte Anzeige als Matrix in R)
+class(DataXtab) = "matrix"
+#Nullwerte durch NA ersetzen
+DataXtab[DataXtab == 0] = NA
+
+#Vektor manuell erzeugen
+#t1Active <- vector(mode = "numeric", length = ncol(t1Spearman))
+#t1Active[t1Active == 0] <- NA
+
+#t1 Active User Vektor mit gleicher Länge wie t1Spearman erstellen 
+for (i in 244) {
+  t1Active <- DataXtab[i,]
+  
+  # ItemID ermitteln die mit 5 bewertet wurde und auf NA gesetzt werden muss
+  t1Active[t1User[2, t1User[1,] == i]] <- NA
+}
+
+#Testweise Ausführung mit UserID 244 -> danach durch i ersetzen
+t1Active <- DataXtab[244,]
+t1Active[t1User[2, t1User[1,] == 244]] <- NA
+
+
+t1DataXtab[,i]
+
+
+
+
+#Vektor mit Bewertungen für User 2 erstellen
+#+t1Active <- as.numeric(t1User[2,])
+
+
+#Vektor für Item an Stelle 2 von t1Active (mit 5 bewertetes Item) anzeigen und über Indizes
+#die Bewertungen der NA-Items (Stelle 3-Ende im Vektor) abfragen
+t1ActiveRated <- t1Spearman[t1Active[2],]
+
+
 
 #Nur die Items auswählen, die eine Bewertung höher als 3 haben
 t1SelectedSimilarities <- dataXtab[which(t1Active>3),]
@@ -56,7 +99,7 @@ FPR = c(0,FPR,1)
 TPR = (1:length(t1RankingList))/length(t1RankingList)
 TPR = c(0,TPR,1)
 
-plot(FPR,TPR,ty="s",xlim=c(0,1),ylim=c(0,1),main="ROC curve")
+plot(FPR, TPR, ty="s", xlim=c(0,1), ylim=c(0,1), main="ROC curve")
 lines(c(0,1),c(0,1),ty="l",lty=2)
 
 sum(diff(FPR[-1])*TPR[-c(1,length(TPR))])
