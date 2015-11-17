@@ -15,6 +15,9 @@ Anweisungen:
 	    -> Restliche fehlende Elemente aus t1User als NA-Items verwenden
 	    -> Auffüllen mit NA bis die Länge t1Spearman erreicht ist
 	
+	-> u.data soll über t1User reduziert werden, um die Activeuser Matrix zu erhalten
+	
+	
 Letzte Fragestellung:
 	-> Welche Filme werden für welchen k-Wert empfohlen?
 
