@@ -1,3 +1,16 @@
+################## FUNKTIONEN
+kNearestNeighbors <- function(i, DistanceMatrix, k)
+{
+  #Ordnen der jeweiligen Spalte (symbolisiert die ItemIDs) der Distanzmatrix
+  #um die IDs der jeweils k nächsten Nachbarn zu erhalten.
+  OrderedNeighbors <- order(DistanceMatrix[i, ])
+  
+  #Von der Funktion sollen nur die zweite bis k+1 Stelle zurückgegeben werden,
+  #da das Item sich selbst natürlich am nächsten ist.
+  return(OrderedNeighbors[2:(k + 1)])
+}
+
+
 #Importing training datasets
 data <- read.table(file = "ML100k/u.data.csv", sep = ";")
 names(data) <- c("UserID", "ItemID", "Rating", "Timestamp")
@@ -5,7 +18,7 @@ names(data) <- c("UserID", "ItemID", "Rating", "Timestamp")
 item <- read.table(file = "ML100k/u.item.csv", sep = ";")
 names(item) <- c("ItemID", "Name")
 
-t1User <- as.matrix(read.table(file = "ML100k/u1.user.items.test.csv", sep = ";"))
+t1User <- as.matrix(read.table(file = "ML100k/u1.user.items.test.csv", sep = ";"), dimnames(NULL))
 #names(t1User) <- c("UserID", "Rated5")
 #UserID (erste Spalte) als Rownames verwenden
 #rownames(t1User) <- t1User[,1]
@@ -48,57 +61,65 @@ DataXtab[DataXtab == 0] = NA
 #t1Active[t1Active == 0] <- NA
 
 #t1 Active User Vektor mit gleicher Länge wie t1Spearman erstellen 
-for (i in 244) {
-  t1Active <- DataXtab[i,]
-  
-  # ItemID ermitteln die mit 5 bewertet wurde und auf NA gesetzt werden muss
-  t1Active[t1User[2, t1User[1,] == i]] <- NA
-}
+#for (i in 244) {
+#  t1Active <- DataXtab[i,]
+#  
+#  # ItemID ermitteln die mit 5 bewertet wurde und auf NA gesetzt werden muss
+#  t1Active[t1User[2, t1User[1,] == i]] <- NA
+#}
 
 #Testweise Ausführung mit UserID 244 -> danach durch i ersetzen
 t1Active <- DataXtab[244,]
-t1Active[t1User[2, t1User[1,] == 244]] <- NA
+
+#ItemID ermitteln die mit 5 bewertet wurde und auf NA gesetzt werden muss,
+#dazu wird zunächst die zweite Spalte von t1User an der aktuellen UserID
+#(UserID aus DataXtab) abgerufen (Vergleich der UserID mit Spalte 1 aus
+#t1User um Wert aus Spalte 2 zu erhalten)
+t1Active[t1User[which(t1User[,1] == 244), 2]] <- NA
+
+#Abfragen der Items aus t1Active, die mit ueber 3 bewertet wurden aus t1Spearman
+#so bekommt man viele Vektoren mit den Korrelationskoeffizienten, die am Ende
+#aufsummiert werden um t1ActiveSpearman zu erhalten
+#t1ActiveSpearman <- colSums(t1Spearman[which(t1Active > 3),], na.rm = TRUE)
+
+################ KNN
+#Abfragen der Items aus t1Active, die mit ueber 3 bewertet wurden aus t1Spearman
+#so bekommt man viele Vektoren mit den Korrelationskoeffizienten. Daraus wird
+#eine euklidische Distanzmatrix erstellt, um kNN anzuwenden. Matrix(-ausschnitt)
+#aus t1Spearman muss vorher transponiert werden, da die Funktion 'dist' die
+#Werte für die Reihen berechnet.
+t1Distances <- as.matrix(dist(t(t1Spearman[which(t1Active > 3),]), method="euclidean"))
+
+for (j in vector) {
+  
+}
+kNearestNeighbors(which(t1Active > 3), t1Distances, 7)
 
 
-t1DataXtab[,i]
++#Stellen in t1ActiveSpearman, die in t1Active mit 1-5 bewertet wurden, werden mit
+#NA überschrieben damit die Rangliste korrekt ausgegeben wird (bereits bewertete
+#Items würden die Rangliste verfälschen)
+t1ActiveSpearman[which(!is.na(t1Active))] <- NA
+
+#Erzeugen der Rangliste aus t1ActiveSpearman
+t1ActiveRank <- rank(t1ActiveSpearman, na.last = "keep")
+
+
+#Distanzmatrix für kNN erzeugen
 
 
 
-
-#Vektor mit Bewertungen für User 2 erstellen
-#+t1Active <- as.numeric(t1User[2,])
-
-
-#Vektor für Item an Stelle 2 von t1Active (mit 5 bewertetes Item) anzeigen und über Indizes
-#die Bewertungen der NA-Items (Stelle 3-Ende im Vektor) abfragen
-t1ActiveRated <- t1Spearman[t1Active[2],]
-
-
-
-#Nur die Items auswählen, die eine Bewertung höher als 3 haben
-t1SelectedSimilarities <- dataXtab[which(t1Active>3),]
-
-#Aufsummieren der Korrelationskoeffizienten der ausgewählten Items (alle Zeilen von t1SelectedSimilarities)
-t1SummedSimilarities = colSums(t1SelectedSimilarities,na.rm = T)
-
-#Separate Matrix aus t1SummedSimilarities erzeugen (zur Bearbeitung)
-t1SelectedItems <- t1SummedSimilarities
-
-#Indizes der NA-Stellen aus t1Active auf t1SelectedItems anwenden (Filtern)
-t1SelectedItems[which(!is.na(t1Active))] = NA
-
-#Rangliste erzeugen
-t1RankingList = rank(-t1SelectedItems, na.last = "keep")
 
 #### ROC Kurven
 #Vektor mit "False Positive Rates" erzeugen
-FPR = ((sort(t1RankingList) - (1:length(t1RankingList)))/(10-length(t1RankingList)))
+FPR = ((sort(t1ActiveRank) - (1:length(t1ActiveRank)))/(10-length(t1ActiveRank)))
 FPR = c(0,FPR,1)
 
 #Vektor mit "True Positive Rates" erzeugen
-TPR = (1:length(t1RankingList))/length(t1RankingList)
+TPR = (1:length(t1ActiveRank))/length(t1ActiveRank)
 TPR = c(0,TPR,1)
 
+#Ausgabe der ROC-Kurve
 plot(FPR, TPR, ty="s", xlim=c(0,1), ylim=c(0,1), main="ROC curve")
 lines(c(0,1),c(0,1),ty="l",lty=2)
 
