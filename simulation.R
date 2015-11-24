@@ -39,9 +39,7 @@ t1Spearman <- cor(t1DataXtab, use = "pairwise.complete.obs", method="spearman")
 #Diagonale der Ähnlichkeitsmatrix durch NA ersetzen (Ähnlichkeit der Diagonale logischerweise 1,00)
 diag(t1Spearman) = NA
 
-
 # Xtab aus u.data erstellen um daraus t1Active zu ziehen
-
 # (ACHTUNG: Anzahl Columns nicht identisch -> muss abgeschnitten werden)
 #xtab erstellen -> Rating als Wert, UserID als y, ItemID als x
 uDataXtab <- xtabs(Rating ~ UserID + ItemID, uData[(uData[,1]) %in% t1User[,1],])
@@ -50,35 +48,29 @@ class(uDataXtab) = "matrix"
 #Nullwerte durch NA ersetzen
 uDataXtab[uDataXtab == 0] = NA
 
-
 #t1 Active User Vektor mit gleicher Länge wie t1Spearman erstellen 
-#for (i in 110) {
+#for (i in 196) {
 #  t1Active <- DataXtab[i,]
 #  
 #  # ItemID ermitteln die mit 5 bewertet wurde und auf NA gesetzt werden muss
 #  t1Active[t1User[2, t1User[1,] == i]] <- NA
 #}
 
-
-
-
 ######################## SIMULATION #############################
-#Testweise Ausführung mit UserID 110 -> danach durch i ersetzen
-t1Active <- uDataXtab[110,]
+#Testweise Ausführung mit UserID 196 -> danach durch i ersetzen
+t1Active <- uDataXtab[which(rownames(uDataXtab) == 196),]
 
 #ItemID ermitteln die mit 5 bewertet wurde und auf NA gesetzt werden muss,
 #dazu wird zunächst die zweite Spalte von t1User an der aktuellen UserID
 #(UserID aus DataXtab) abgerufen (Vergleich der UserID mit Spalte 1 aus
 #t1User um Wert aus Spalte 2 zu erhalten)
-t1Active[t1User[which(t1User[,1] == 110), 2]] <- NA
+t1Active[t1User[which(t1User[,1] == 196), 2]] <- NA
 
+#ERSETZT DURCH KNN
 #Abfragen der Items aus t1Spearman, die in t1Active mit ueber 3 bewertet wurden 
 #so bekommt man viele Vektoren mit den Korrelationskoeffizienten, die am Ende
 #aufsummiert werden um t1ActiveSpearman zu erhalten
-t1ActiveSpearman <- colSums(t1Spearman[which(t1Active > 3),], na.rm = TRUE)
-
-
-names(sort(rank(t1ActiveSpearman, na.last = TRUE, ties.method = "random"))[1:2])
+#t1ActiveSpearman <- colSums(t1Spearman[which(t1Active > 3),], na.rm = TRUE)
 
 ####KNN
 #Korrelationen aller Items die im aktiven Vektor mit über 3 bewertet sind aus
@@ -99,11 +91,10 @@ for (j in seq_len(nrow(t1ColSumMatrix))) {
   #in kNNItems aufgeführt sind (also alle Items, die nicht die jeweilig
   #k Nearest-Neighbors sind). So können nun per colSums die Spalten der
   #Matrix aufaddiert werden.
-  t1ColSumMatrix[1,which(!names(t1ColSumMatrix[j,]) %in% kNNItems)] <- NA
+  t1ColSumMatrix[j,which(!names(t1ColSumMatrix[j,]) %in% kNNItems)] <- NA
 }
 
 ####/KNN
-
 
 #Active User Vektor mit der Summe aller Spalten der t1ColSumMatrix auffüllen
 #(kNN ist damit abgeschlossen)
@@ -118,15 +109,14 @@ t1ActiveSpearman[which(!is.na(t1Active))] <- NA
 #sind (t1User in der Zeile UserID i und dann nur die Spalten 2:Ende). Alle Items die nicht
 #in t1User fuer diese UserID erscheinen werden auf NA gesetzt, damit die Rangfolge mit den
 #richtigen Bewertungen / Items berechnet wird.
-t1ActiveSpearman[!(as.numeric(names(t1ActiveSpearman)) %in% t1User[(t1User[,1] == 110),2:ncol(t1User)])] <- NA
+t1ActiveSpearman[!(as.numeric(names(t1ActiveSpearman)) %in% t1User[(t1User[,1] == 196),2:ncol(t1User)])] <- NA
 
 #Erzeugen der Rangliste aus t1ActiveSpearman
-t1ActiveRank <- rank(t1ActiveSpearman, na.last = "keep")
-
+t1ActiveRank <- rank(-t1ActiveSpearman, na.last = "keep")
 
 #### ROC Kurven
 ######################## FUNKTIONEN #############################
-fROC=function(t1ActiveRank,iSize=500){
+fROC=function(t1ActiveRank,iSize=length(t1ActiveRank)){
   
   ##########   PROCESSING   ##########
   ##### Berechnung der Koordinatenwerte der ROC-Kurve
@@ -145,7 +135,7 @@ fROC=function(t1ActiveRank,iSize=500){
   
 }
 
-fAUC=function(t1ActiveRank,iSize=500){
+fAUC=function(t1ActiveRank,iSize=length(t1ActiveRank)){
   
   ##########   PROCESSING   ##########
   ##### Berechnung der Koordinatenwerte der ROC-Kurve
