@@ -1,3 +1,9 @@
+######################## LIBRARIES #############################
+library(parallel)
+
+######################## VARIABLEN #############################
+kValue = 3
+
 ######################## DATENIMPORT #############################
 #Importing training datasets
 uData <- read.table(file = "ML100k/u.data.csv", sep = ";")
@@ -66,24 +72,42 @@ t1Active <- uDataXtab[110,]
 #t1User um Wert aus Spalte 2 zu erhalten)
 t1Active[t1User[which(t1User[,1] == 110), 2]] <- NA
 
-#Abfragen der Items aus t1Active, die mit ueber 3 bewertet wurden aus t1Spearman
+#Abfragen der Items aus t1Spearman, die in t1Active mit ueber 3 bewertet wurden 
 #so bekommt man viele Vektoren mit den Korrelationskoeffizienten, die am Ende
 #aufsummiert werden um t1ActiveSpearman zu erhalten
 t1ActiveSpearman <- colSums(t1Spearman[which(t1Active > 3),], na.rm = TRUE)
 
+
+names(sort(rank(t1ActiveSpearman, na.last = TRUE, ties.method = "random"))[1:2])
+
 ####KNN
-#Matrix aus den 
-#t1ColSumMatrix <- t1Spearman[which(t1Active > 3),]
-#
-#sort(rank(t1ColSumMatrix[1,], ties.method = "random"))
-#
-#for (j in nrow(t1ColSumMatrix)) {
-#  rank()
-#}
+#Korrelationen aller Items die im aktiven Vektor mit über 3 bewertet sind aus
+#der Spearman-Matrix ziehen und zu einer Matrix zusammenfügen. 
+t1ColSumMatrix <- t1Spearman[which(t1Active > 3),]
+
+#names(sort(rank(-t1ColSumMatrix[1,], ties.method = "random", na.last = "keep")))[1:5]
+#names(sort(rank(-t1ColSumMatrix[2,], ties.method = "random", na.last = "keep")))[1:5]
+
+for (j in seq_len(nrow(t1ColSumMatrix))) {
+  
+  #Ranked und sortiert jede Zeile der Matrix t1ColSumMatrix, um die
+  #1 bis kValue (oben definiert) "besten" ItemIDs zu bekommen, welche
+  #mit dem jeweiligen Item am besten korrelieren
+  kNNItems <- as.numeric(names(sort(rank(-t1ColSumMatrix[j,], ties.method = "random", na.last = "keep")))[1:kValue])
+  
+  #Ersetzt alle Stellen in der Matrix t1ColSumMatrix durch NA, die nicht
+  #in kNNItems aufgeführt sind (also alle Items, die nicht die jeweilig
+  #k Nearest-Neighbors sind). So können nun per colSums die Spalten der
+  #Matrix aufaddiert werden.
+  t1ColSumMatrix[1,which(!names(t1ColSumMatrix[j,]) %in% kNNItems)] <- NA
+}
 
 ####/KNN
 
-#t1ActiveSpearman <- colSums(t1ColSumMatrix, na.rm = TRUE)
+
+#Active User Vektor mit der Summe aller Spalten der t1ColSumMatrix auffüllen
+#(kNN ist damit abgeschlossen)
+t1ActiveSpearman <- colSums(t1ColSumMatrix, na.rm = TRUE)
 
 #Stellen in t1ActiveSpearman, die in t1Active mit 1-5 bewertet wurden, werden mit
 #NA überschrieben damit die Rangliste korrekt ausgegeben wird (bereits bewertete
@@ -91,7 +115,7 @@ t1ActiveSpearman <- colSums(t1Spearman[which(t1Active > 3),], na.rm = TRUE)
 t1ActiveSpearman[which(!is.na(t1Active))] <- NA
 
 #t1Active wird hier nur auf diejenigen Items reduziert, die auch in t1User aufgeführt
-#sind (t1User in der Zeile UserID i und dann nur die Spalten 3:Ende). Alle Items die nicht
+#sind (t1User in der Zeile UserID i und dann nur die Spalten 2:Ende). Alle Items die nicht
 #in t1User fuer diese UserID erscheinen werden auf NA gesetzt, damit die Rangfolge mit den
 #richtigen Bewertungen / Items berechnet wird.
 t1ActiveSpearman[!(as.numeric(names(t1ActiveSpearman)) %in% t1User[(t1User[,1] == 110),2:ncol(t1User)])] <- NA
