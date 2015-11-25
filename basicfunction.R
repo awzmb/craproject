@@ -2,7 +2,7 @@
 library(parallel)
 
 ######################## VARIABLEN #############################
-kValue = 2
+kValue = 1682
 
 ######################## DATENIMPORT #############################
 #Importing training datasets
@@ -34,26 +34,17 @@ spearmanMatrix <- cor(uDataSpearman, use = "pairwise.complete.obs", method="spea
 diag(spearmanMatrix) = NA
 
 
-######################## FUNKTIONEN #############################
-UserVResult = function(uDataActiveUser, userMatrix, spearmanMatrix, userID){
-  
   #Erzeugen des Active User Vektors (activeUser) per Aufruf eines
   #Vektors aus der uDataActiveUser, wobei die userID aus den Zeilennamen
   #der Matrix abgeleitet wird (z. B. userID 196 = Zeile 35 in 
   #uDataActiveUser)
-  activeUser <- uDataActiveUser[which(rownames(uDataActiveUser) == userID),]
+  activeUser <- uDataActiveUser[which(rownames(uDataActiveUser) == 110),]
   
   #ItemID ermitteln die mit 5 bewertet wurde und auf NA gesetzt werden muss,
-  #dazu wird zunächst die zweite Spalte von userMatrix an der aktuellen UserID
-  #(UserID aus DataXtab) abgerufen (Vergleich der UserID mit Spalte 1 aus
+  #dazu wird zunächst die zweite Spalte von userMatrix an der aktuellen 110
+  #(110 aus DataXtab) abgerufen (Vergleich der 110 mit Spalte 1 aus
   #userMatrix um Wert aus Spalte 2 zu erhalten)
-  activeUser[userMatrix[which(userMatrix[,1] == userID), 2]] <- NA
-  
-  #ERSETZT DURCH KNN
-  #Abfragen der Items aus spearmanMatrix, die in activeUser mit ueber 3 bewertet wurden 
-  #so bekommt man viele Vektoren mit den Korrelationskoeffizienten, die am Ende
-  #aufsummiert werden um activeUserSpearman zu erhalten
-  #activeUserSpearman <- colSums(spearmanMatrix[which(activeUser > 3),], na.rm = TRUE)
+  activeUser[userMatrix[which(userMatrix[,1] == 110), 2]] <- NA
   
   ####KNN
   #Korrelationen aller Items die im aktiven Vektor mit über 3 bewertet sind aus
@@ -82,7 +73,7 @@ UserVResult = function(uDataActiveUser, userMatrix, spearmanMatrix, userID){
   #Active User Vektor mit der Summe aller Spalten der ColSumMatrix auffüllen
   #(kNN ist damit abgeschlossen)
   #activeUserSpearman <- colSums(ColSumMatrix, na.rm = TRUE)
-  activeUserSpearman=apply(ColSumMatrix,2,function(v){if(any(!is.na(v))){sum(v,na.rm=T)}else{NA}})
+    activeUserSpearman=apply(ColSumMatrix,2,function(v){if(any(!is.na(v))){sum(v,na.rm=T)}else{NA}})
   
   #Stellen in activeUserSpearman, die in activeUser mit 1-5 bewertet wurden, werden mit
   #NA überschrieben damit die Rangliste korrekt ausgegeben wird (bereits bewertete
@@ -90,27 +81,15 @@ UserVResult = function(uDataActiveUser, userMatrix, spearmanMatrix, userID){
   activeUserSpearman[which(!is.na(activeUser))] <- NA
   
   #activeUser wird hier nur auf diejenigen Items reduziert, die auch in userMatrix aufgeführt
-  #sind (userMatrix in der Zeile UserID i und dann nur die Spalten 2:Ende). Alle Items die nicht
-  #in userMatrix fuer diese UserID erscheinen werden auf NA gesetzt, damit die Rangfolge mit den
+  #sind (userMatrix in der Zeile 110 i und dann nur die Spalten 2:Ende). Alle Items die nicht
+  #in userMatrix fuer diese 110 erscheinen werden auf NA gesetzt, damit die Rangfolge mit den
   #richtigen Bewertungen / Items berechnet wird.
-  activeUserSpearman[!(as.numeric(names(activeUserSpearman)) %in% userMatrix[(userMatrix[,1] == userID),2:ncol(userMatrix)])] <- NA
+  activeUserSpearman[!(as.numeric(names(activeUserSpearman)) %in% userMatrix[(userMatrix[,1] == 110),2:ncol(userMatrix)])] <- NA
   
   #Erzeugen der Rangliste aus activeUserSpearman
   activeUserItemRanking <- rank(-activeUserSpearman, na.last = "keep")
   
-  resultUserRank <- as.numeric(activeUserItemRanking[userMatrix[(userMatrix[,1] == userID),2]])
-  
-  return(resultUserRank)
-}
-
-######################## SIMULATION #############################
-sumResults <- NULL
-for (userID in as.numeric(rownames(uDataActiveUser))) {
-  activeResult <- UserVResult(uDataActiveUser, userMatrix, spearmanMatrix, userID)
-  sumResults <- c(sumResults, activeResult)
-}
-
-UserVResult(uDataActiveUser, userMatrix, spearmanMatrix, 110)
+  resultUserRank <- as.numeric(activeUserItemRanking[userMatrix[(userMatrix[,1] == 110),2]])
 
 
 #activeUserRank <- sumResults[2:nrow(sumResults),2:ncol(sumResults)]
@@ -134,6 +113,7 @@ fROC=function(sumResults,iSize=500){
   ##########     OUTPUT     ##########
   ##### Zeichnen der ROC-Kurve
   return(cbind(FPR,TPR))
+  
 }
 
 fAUC=function(sumResults,iSize=500){
@@ -153,6 +133,7 @@ fAUC=function(sumResults,iSize=500){
   AUC=sum(diff(FPR[-1])*TPR[-c(1,length(TPR))])
   AUC=round(AUC,4)*100
   return(AUC)
+  
 }
 
 fNRR=function(sumResults){
