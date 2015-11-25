@@ -12,5 +12,3 @@ Anweisungen:
 		
 Letzte Fragestellung:
 	-> Welche Filme werden für welchen k-Wert empfohlen?
-
-	
