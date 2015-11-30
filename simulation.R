@@ -1,22 +1,10 @@
 ######################## LIBRARIES #############################
 library(parallel)
 
-######################## VARIABLEN #############################
-kValue = 2
-
 ######################## DATENIMPORT #############################
-#Importing training datasets
+#u.data (gesamte Datenmenge)
 uData <- read.table(file = "ML100k/u.data.csv", sep = ";")
 names(uData) <- c("UserID", "ItemID", "Rating", "Timestamp")
-
-itemDescription <- read.table(file = "ML100k/u.item.csv", sep = ";")
-names(itemDescription) <- c("ItemID", "Name")
-
-userMatrix <- as.matrix(read.table(file = "ML100k/u1.user.items.test.csv", sep = ";"))
-
-#Relevante UserIDs
-trainingUsers <- read.table(file = "ML100k/u1.user.training.csv", sep = ";")
-names(trainingUsers) <- c("UserID")
 
 # Xtab aus u.data erstellen um daraus activeUser zu ziehen
 # (ACHTUNG: Anzahl Columns nicht identisch -> muss abgeschnitten werden)
@@ -26,16 +14,44 @@ uDataXtab <- xtabs(Rating ~ UserID + ItemID, uData)
 uDataXtab[uDataXtab == 0] = NA
 #Matrix aus xtab erstellen (korrekte Anzeige als Matrix in R)
 class(uDataXtab) = "matrix"
-uDataActiveUser <- uDataXtab[(rownames(uDataXtab) %in% userMatrix[,1]),]
-uDataSpearman <- uDataXtab[(rownames(uDataXtab) %in% trainingUsers[,1]),]
-#Ähnlichkeitsmatrix berechnen (Spearman)
-spearmanMatrix <- cor(uDataSpearman, use = "pairwise.complete.obs", method="spearman")
-#Diagonale der Ähnlichkeitsmatrix durch NA ersetzen (Ähnlichkeit der Diagonale logischerweise 1,00)
-diag(spearmanMatrix) = NA
+
+#Beschreibung der Items
+itemDescription <- read.table(file = "ML100k/u.item.csv", sep = ";")
+names(itemDescription) <- c("ItemID", "Name")
+
+
+#Einlesen aller relevanter Datensaetze
+for(dataSetVar in 1:5)
+{
+  #Userbewertungen
+  userMatrix <- as.matrix(read.table(file = paste0("ML100k/u", dataSetVar, ".user.items.test.csv"), sep = ";"))
+
+  #Relevante UserIDs
+  trainingUsers <- read.table(file = paste0("ML100k/u", dataSetVar, ".user.training.csv"), sep = ";")
+  
+  #Teilen von uData in 2 separate Matrizen (1x mit den relevanten UserIDs (Trainingsuser)
+  #und 1x mit den Testusern)
+  uDataActiveUser <- uDataXtab[(rownames(uDataXtab) %in% userMatrix[,1]),]
+  uDataSpearman <- uDataXtab[(rownames(uDataXtab) %in% trainingUsers[,1]),]
+  
+  #Aehnlichkeitsmatrix berechnen (Spearman)
+  spearmanMatrix <- cor(uDataSpearman, use = "pairwise.complete.obs", method="spearman")
+  
+  #Diagonale der Aehnlichkeitsmatrix durch NA ersetzen (aehnlichkeit der Diagonale logischerweise 1,00)
+  diag(spearmanMatrix) = NA
+  
+  #Korrekte Namen zuweisen (1-5)
+  assign(paste0("userMatrix", dataSetVar), userMatrix)
+  assign(paste0("trainingUsers", dataSetVar), trainingUsers)
+  assign(paste0("uDataActiveUser", dataSetVar), uDataActiveUser)
+  assign(paste0("uDataSpearman", dataSetVar), uDataSpearman)
+  assign(paste0("spearmanMatrix", dataSetVar), spearmanMatrix)
+}
 
 
 ######################## FUNKTIONEN #############################
-UserVResult = function(uDataActiveUser, userMatrix, spearmanMatrix, userID){
+#### BEWERTUNG
+fVResult = function(uDataActiveUser, userMatrix, spearmanMatrix, kValue, userID){
   
   #Erzeugen des Active User Vektors (activeUser) per Aufruf eines
   #Vektors aus der uDataActiveUser, wobei die userID aus den Zeilennamen
@@ -44,7 +60,7 @@ UserVResult = function(uDataActiveUser, userMatrix, spearmanMatrix, userID){
   activeUser <- uDataActiveUser[which(rownames(uDataActiveUser) == userID),]
   
   #ItemID ermitteln die mit 5 bewertet wurde und auf NA gesetzt werden muss,
-  #dazu wird zunächst die zweite Spalte von userMatrix an der aktuellen UserID
+  #dazu wird zunaechst die zweite Spalte von userMatrix an der aktuellen UserID
   #(UserID aus DataXtab) abgerufen (Vergleich der UserID mit Spalte 1 aus
   #userMatrix um Wert aus Spalte 2 zu erhalten)
   activeUser[userMatrix[which(userMatrix[,1] == userID), 2]] <- NA
@@ -57,12 +73,11 @@ UserVResult = function(uDataActiveUser, userMatrix, spearmanMatrix, userID){
   
   ####KNN
   #Korrelationen aller Items die im aktiven Vektor mit über 3 bewertet sind aus
-  #der Spearman-Matrix ziehen und zu einer Matrix zusammenfügen. 
+  #der Spearman-Matrix ziehen und zu einer Matrix zusammenfuegen. 
   ColSumMatrix <- spearmanMatrix[which(activeUser > 3),]
   
-  #names(sort(rank(-ColSumMatrix[1,], ties.method = "random", na.last = "keep")))[1:5]
-  #names(sort(rank(-ColSumMatrix[2,], ties.method = "random", na.last = "keep")))[1:5]
-  
+  #Schleife zur Berechnung der k nearest neighbours fuer den aktuellen
+  #Active User Vektor. 
   for (j in seq_len(nrow(ColSumMatrix))) {
     
     #Ranked und sortiert jede Zeile der Matrix ColSumMatrix, um die
@@ -80,13 +95,14 @@ UserVResult = function(uDataActiveUser, userMatrix, spearmanMatrix, userID){
   ####/KNN
   
   #Active User Vektor mit der Summe aller Spalten der ColSumMatrix auffüllen
-  #(kNN ist damit abgeschlossen)
+  #(kNN ist damit abgeschlossen). NA-Werte werden bei diesem Zwischenschritt
+  #entfernt (Funktion nach Vorgabe J. Knoll).
   #activeUserSpearman <- colSums(ColSumMatrix, na.rm = TRUE)
   activeUserSpearman=apply(ColSumMatrix,2,function(v){if(any(!is.na(v))){sum(v,na.rm=T)}else{NA}})
   
   #Stellen in activeUserSpearman, die in activeUser mit 1-5 bewertet wurden, werden mit
   #NA überschrieben damit die Rangliste korrekt ausgegeben wird (bereits bewertete
-  #Items würden die Rangliste verfälschen)
+  #Items würden die Rangliste verfaelschen)
   activeUserSpearman[which(!is.na(activeUser))] <- NA
   
   #activeUser wird hier nur auf diejenigen Items reduziert, die auch in userMatrix aufgeführt
@@ -95,29 +111,17 @@ UserVResult = function(uDataActiveUser, userMatrix, spearmanMatrix, userID){
   #richtigen Bewertungen / Items berechnet wird.
   activeUserSpearman[!(as.numeric(names(activeUserSpearman)) %in% userMatrix[(userMatrix[,1] == userID),2:ncol(userMatrix)])] <- NA
   
-  #Erzeugen der Rangliste aus activeUserSpearman
+  #Erzeugen der Rangliste aus activeUserSpearman.
   activeUserItemRanking <- rank(-activeUserSpearman, na.last = "keep")
   
+  #Abfrage des aktuellen Ranges jenes Items, das in userMatrix mit 5 bewertet wurde (Spalte 2).
+  #Dieser Wert wird als Ergebnis zurueckgegeben.
   resultUserRank <- as.numeric(activeUserItemRanking[userMatrix[(userMatrix[,1] == userID),2]])
   
   return(resultUserRank)
 }
 
-######################## SIMULATION #############################
-sumResults <- NULL
-for (userID in as.numeric(rownames(uDataActiveUser))) {
-  activeResult <- UserVResult(uDataActiveUser, userMatrix, spearmanMatrix, userID)
-  sumResults <- c(sumResults, activeResult)
-}
-
-UserVResult(uDataActiveUser, userMatrix, spearmanMatrix, 110)
-
-
-#activeUserRank <- sumResults[2:nrow(sumResults),2:ncol(sumResults)]
-#activeUserRank <- colSums(activeUserRank, na.rm = TRUE)
-
 #### ROC Kurven
-######################## FUNKTIONEN #############################
 fROC=function(sumResults,iSize=500){
   
   ##########   PROCESSING   ##########
@@ -163,7 +167,42 @@ fNRR=function(sumResults){
   return(NRR)
 }
 
-#Vektor mit "False Positive Rates" erzeugen
+
+
+######################## VARIABLEN #############################
+#Wert fuer kNN (Anzahl an Neighbours)
+kValues = c(2, 3, 5, 10, 20, 50, 100)
+
+
+######################## SIMULATION #############################
+#Berechnung der Werte fuer den aktuellen Datensatz
+
+for (dataSet in 1) {
+  #Variablen umbennenen, so dass for loop damit arbeiten kann
+  #assign("uDataActiveUser", )
+  
+  for (kValue in kValues) {
+    #Arbeitsvektor leeren
+    sumResults <- NULL
+    
+    #Erzeugen der Werte pro Datensatz und Wert fuer k
+    for (userID in as.numeric(rownames(uDataActiveUser1))) {
+      activeResult <- fVResult(
+        uDataActiveUser,
+        userMatrix,
+        spearmanMatrix,
+        kValue,
+        userID)
+      sumResults <- c(sumResults, activeResult)
+    }
+    
+    #Ergebnisse zusammenfuehren
+    assign(paste0("sumResults_t", dataSet, "_k", kValue), sumResults)
+  }
+}
+
+
+#Erstellen der ROC-Kurve
 plot(NULL, xlim=c(0,1), ylim=c(0,1), main="ROC curve", ylab="True Postitive Rate", xlab="False Positive Rate")
 lines(fROC(sumResults))
 fAUC(sumResults) # in Prozent
