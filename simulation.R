@@ -1,6 +1,14 @@
 ######################## LIBRARIES #############################
 library(parallel)
 
+
+
+######################## VARIABLEN #############################
+#Wert fuer kNN (Anzahl an Neighbours)
+kValues = c(2, 3, 5, 10, 20, 50, 100)
+
+
+
 ######################## DATENIMPORT #############################
 #u.data (gesamte Datenmenge)
 uData <- read.table(file = "ML100k/u.data.csv", sep = ";")
@@ -19,34 +27,6 @@ class(uDataXtab) = "matrix"
 itemDescription <- read.table(file = "ML100k/u.item.csv", sep = ";")
 names(itemDescription) <- c("ItemID", "Name")
 
-
-#Einlesen aller relevanter Datensaetze
-for(dataSetVar in 1:5)
-{
-  #Userbewertungen
-  userMatrix <- as.matrix(read.table(file = paste0("ML100k/u", dataSetVar, ".user.items.test.csv"), sep = ";"))
-
-  #Relevante UserIDs
-  trainingUsers <- read.table(file = paste0("ML100k/u", dataSetVar, ".user.training.csv"), sep = ";")
-  
-  #Teilen von uData in 2 separate Matrizen (1x mit den relevanten UserIDs (Trainingsuser)
-  #und 1x mit den Testusern)
-  uDataActiveUser <- uDataXtab[(rownames(uDataXtab) %in% userMatrix[,1]),]
-  uDataSpearman <- uDataXtab[(rownames(uDataXtab) %in% trainingUsers[,1]),]
-  
-  #Aehnlichkeitsmatrix berechnen (Spearman)
-  spearmanMatrix <- cor(uDataSpearman, use = "pairwise.complete.obs", method="spearman")
-  
-  #Diagonale der Aehnlichkeitsmatrix durch NA ersetzen (aehnlichkeit der Diagonale logischerweise 1,00)
-  diag(spearmanMatrix) = NA
-  
-  #Korrekte Namen zuweisen (1-5)
-  assign(paste0("userMatrix", dataSetVar), userMatrix)
-  assign(paste0("trainingUsers", dataSetVar), trainingUsers)
-  assign(paste0("uDataActiveUser", dataSetVar), uDataActiveUser)
-  assign(paste0("uDataSpearman", dataSetVar), uDataSpearman)
-  assign(paste0("spearmanMatrix", dataSetVar), spearmanMatrix)
-}
 
 
 ######################## FUNKTIONEN #############################
@@ -169,24 +149,35 @@ fNRR=function(sumResults){
 
 
 
-######################## VARIABLEN #############################
-#Wert fuer kNN (Anzahl an Neighbours)
-kValues = c(2, 3, 5, 10, 20, 50, 100)
-
 
 ######################## SIMULATION #############################
-#Berechnung der Werte fuer den aktuellen Datensatz
-
-for (dataSet in 1) {
-  #Variablen umbennenen, so dass for loop damit arbeiten kann
-  #assign("uDataActiveUser", )
+#Einlesen aller relevanter Datensaetze
+for(dataSetVar in 1:5)
+{
+  #Userbewertungen
+  userMatrix <- as.matrix(read.table(file = paste0("ML100k/u", dataSetVar, ".user.items.test.csv"), sep = ";"))
   
-  for (kValue in kValues) {
+  #Relevante UserIDs
+  trainingUsers <- read.table(file = paste0("ML100k/u", dataSetVar, ".user.training.csv"), sep = ";")
+  
+  #Teilen von uData in 2 separate Matrizen (1x mit den relevanten UserIDs (Trainingsuser)
+  #und 1x mit den Testusern)
+  uDataActiveUser <- uDataXtab[(rownames(uDataXtab) %in% userMatrix[,1]),]
+  uDataSpearman <- uDataXtab[(rownames(uDataXtab) %in% trainingUsers[,1]),]
+  
+  #Aehnlichkeitsmatrix berechnen (Spearman)
+  spearmanMatrix <- cor(uDataSpearman, use = "pairwise.complete.obs", method="spearman")
+  
+  #Diagonale der Aehnlichkeitsmatrix durch NA ersetzen (aehnlichkeit der Diagonale logischerweise 1,00)
+  diag(spearmanMatrix) = NA
+  
+  #Berechnung der Werte fuer den aktuellen Datensatz
+  for (kValue in c(kValues, ncol(uDataSpearman))) {
     #Arbeitsvektor leeren
     sumResults <- NULL
     
     #Erzeugen der Werte pro Datensatz und Wert fuer k
-    for (userID in as.numeric(rownames(uDataActiveUser1))) {
+    for (userID in as.numeric(rownames(uDataActiveUser))) {
       activeResult <- fVResult(
         uDataActiveUser,
         userMatrix,
@@ -196,14 +187,94 @@ for (dataSet in 1) {
       sumResults <- c(sumResults, activeResult)
     }
     
-    #Ergebnisse zusammenfuehren
-    assign(paste0("sumResults_t", dataSet, "_k", kValue), sumResults)
+    #Ergebnis umbenennen und ablegen
+    assign(paste0("sumResults_t", dataSetVar, "_k", kValue), sumResults)
   }
 }
 
 
-#Erstellen der ROC-Kurve
+
+######################## AUSGABE #############################
+#Erstellen der ROC-Kurven
 plot(NULL, xlim=c(0,1), ylim=c(0,1), main="ROC curve", ylab="True Postitive Rate", xlab="False Positive Rate")
 lines(fROC(sumResults))
 fAUC(sumResults) # in Prozent
 fNRR(sumResults) # in Prozent
+
+
+#Erstellen der ROC-Kurven
+plotColors = c("sandybrown", "blue", "green", "tomato", "steelblue", "burlywood3", "magenta3", "black")
+plot(NULL, xlim=c(0,1), ylim=c(0,1), main="ROC curve (T5)", ylab="True Postitive Rate", xlab="False Positive Rate")
+lines(fROC(sumResults_t5_k2), col=plotColors[1])
+lines(fROC(sumResults_t5_k3), col=plotColors[2])
+lines(fROC(sumResults_t5_k5), col=plotColors[3])
+lines(fROC(sumResults_t5_k10), col=plotColors[4])
+lines(fROC(sumResults_t5_k20), col=plotColors[5])
+lines(fROC(sumResults_t5_k50), col=plotColors[6])
+lines(fROC(sumResults_t5_k100), col=plotColors[7])
+lines(fROC(sumResults_t5_k1682), col=plotColors[8])
+legend(0.8, 0.5, c("k = 2","k = 3","k = 5","k = 10","k = 20","k = 50","k = 100", "k = MAX"), cex=0.8, col=plotColors, lty=1)
+
+
+
+
+#Ergebnisse zusammenführen
+sumResults_k2 <- c(sumResults_t1_k2, sumResults_t2_k2, sumResults_t3_k2, sumResults_t4_k2, sumResults_t5_k2)
+sumResults_k3 <- c(sumResults_t1_k3, sumResults_t2_k3, sumResults_t3_k3, sumResults_t4_k3, sumResults_t5_k3)
+sumResults_k5 <- c(sumResults_t1_k5, sumResults_t2_k5, sumResults_t3_k5, sumResults_t4_k5, sumResults_t5_k5)
+sumResults_k10 <- c(sumResults_t1_k10, sumResults_t2_k10, sumResults_t3_k10, sumResults_t4_k10, sumResults_t5_k10)
+sumResults_k20 <- c(sumResults_t1_k20, sumResults_t2_k20, sumResults_t3_k20, sumResults_t4_k20, sumResults_t5_k20)
+sumResults_k50 <- c(sumResults_t1_k50, sumResults_t2_k50, sumResults_t3_k50, sumResults_t4_k50, sumResults_t5_k50)
+sumResults_k100 <- c(sumResults_t1_k100, sumResults_t2_k100, sumResults_t3_k100, sumResults_t4_k100, sumResults_t5_k100)
+sumResults_k1682 <- c(sumResults_t1_k1682, sumResults_t2_k1682, sumResults_t3_k1682, sumResults_t4_k1682, sumResults_t5_k1682)
+
+
+#Farbgebung fuer die Plots definieren
+plotColors = c("sandybrown", "blue", "green", "tomato", "steelblue", "burlywood3", "magenta3", "black")
+
+
+#Plot ueber Ergebnisse der gesamten Analyse
+plot(NULL, xlim=c(0,1), ylim=c(0,1), main="ROC curve (T5)", ylab="True Postitive Rate", xlab="False Positive Rate")
+lines(fROC(sumResults_k2), col=plotColors[1])
+lines(fROC(sumResults_k3), col=plotColors[2])
+lines(fROC(sumResults_k5), col=plotColors[3])
+lines(fROC(sumResults_k10), col=plotColors[4])
+lines(fROC(sumResults_k20), col=plotColors[5])
+lines(fROC(sumResults_k50), col=plotColors[6])
+lines(fROC(sumResults_k100), col=plotColors[7])
+lines(fROC(sumResults_k1682), col=plotColors[8])
+legend(0.8, 0.5, c("k = 2","k = 3","k = 5","k = 10","k = 20","k = 50","k = 100", "k = MAX"), cex=0.8, col=plotColors, lty=1)
+
+
+#Uebersicht k50 ueber alle Datensaetze
+plot(NULL, xlim=c(0,1), ylim=c(0,1), main="ROC curve (comparison t1 - t5 datasets)", ylab="True Postitive Rate", xlab="False Positive Rate")
+lines(fROC(sumResults_t1_k50), col=plotColors[1])
+lines(fROC(sumResults_t2_k50), col=plotColors[2])
+lines(fROC(sumResults_t3_k50), col=plotColors[3])
+lines(fROC(sumResults_t4_k50), col=plotColors[4])
+lines(fROC(sumResults_t5_k50), col=plotColors[5])
+legend(0.8, 0.5, c("t1", "t2", "t3", "t4", "t5"), cex=0.8, col=plotColors, lty=1)
+
+
+#Werte fuer AUC und NRR fuer alle k in Matrix schreiben
+sumResults_NRR_AUC <- matrix(0, 8, 2)
+rownames(sumResults_NRR_AUC) <- c("k2", "k3", "k5", "k10", "k20", "k50", "k100", "kMAX")
+colnames(sumResults_NRR_AUC) <- c("NRR", "AUC")
+sumResults_NRR_AUC[1,] <- c(fNRR(sumResults_k2), fAUC(sumResults_k2))
+sumResults_NRR_AUC[2,] <- c(fNRR(sumResults_k3), fAUC(sumResults_k3))
+sumResults_NRR_AUC[3,] <- c(fNRR(sumResults_k5), fAUC(sumResults_k5))
+sumResults_NRR_AUC[4,] <- c(fNRR(sumResults_k10), fAUC(sumResults_k10))
+sumResults_NRR_AUC[5,] <- c(fNRR(sumResults_k20), fAUC(sumResults_k20))
+sumResults_NRR_AUC[6,] <- c(fNRR(sumResults_k50), fAUC(sumResults_k50))
+sumResults_NRR_AUC[7,] <- c(fNRR(sumResults_k100), fAUC(sumResults_k100))
+sumResults_NRR_AUC[8,] <- c(fNRR(sumResults_k1682), fAUC(sumResults_k1682))
+
+
+#
+plot(NULL, xlim=c(1,2), ylim=c(1,2), main="ROC curve (comparison t1 - t5 datasets)", ylab="NRR", xlab="AUC")
+lines(as.numeric(sumResults_NRR_AUC[1:7,1]/sumResults_NRR_AUC[1:7,2]), col=plotColors[1])
+
+#
+plot(NULL, xlim=c(0,100), ylim=c(0,100), main="NRR / AUC ratio")
+lines(sumResults_NRR_AUC[1:7,1], col=plotColors[1])
+lines(sumResults_NRR_AUC[1:7,2], col=plotColors[2])
