@@ -3,12 +3,6 @@ library(parallel)
 
 
 
-######################## VARIABLEN #############################
-#Wert fuer kNN (Anzahl an Neighbours)
-kValues = c(2, 3, 5, 10, 20, 50, 100)
-
-
-
 ######################## DATENIMPORT #############################
 #u.data (gesamte Datenmenge)
 uData <- read.table(file = "ML100k/u.data.csv", sep = ";")
@@ -26,6 +20,43 @@ class(uDataXtab) = "matrix"
 #Beschreibung der Items
 itemDescription <- read.table(file = "ML100k/u.item.csv", sep = ";")
 names(itemDescription) <- c("ItemID", "Name")
+
+#Vektoren mit den Namen fuer den spaeteren Zugriff erzeugen
+userMatrixNames <- NULL
+uDataActiveUserNames <- NULL
+spearmanMatrixNames <- NULL
+
+#Erstellen der benoetigten Matrizen
+for(dataSetVar in 1:5)
+{
+  #Userbewertungen
+  userMatrix <- as.matrix(read.table(file = paste0("ML100k/u", dataSetVar, ".user.items.test.csv"), sep = ";"))
+  
+  #Relevante UserIDs
+  trainingUsers <- read.table(file = paste0("ML100k/u", dataSetVar, ".user.training.csv"), sep = ";")
+  
+  #Teilen von uData in 2 separate Matrizen (1x mit den relevanten UserIDs (Trainingsuser)
+  #und 1x mit den Testusern)
+  uDataActiveUser <- uDataXtab[(rownames(uDataXtab) %in% userMatrix[,1]),]
+  uDataSpearman <- uDataXtab[(rownames(uDataXtab) %in% trainingUsers[,1]),]
+  
+  #Aehnlichkeitsmatrix berechnen (Spearman)
+  spearmanMatrix <- cor(uDataSpearman, use = "pairwise.complete.obs", method="spearman")
+  
+  #Diagonale der Aehnlichkeitsmatrix durch NA ersetzen (aehnlichkeit der Diagonale logischerweise 1,00)
+  diag(spearmanMatrix) = NA
+  
+  #Zuweisung der Namen aller fuer die Simulation benoetigten Matrizen
+  assign(paste0("userMatrix", dataSetVar), userMatrix)
+  assign(paste0("uDataActiveUser", dataSetVar), uDataActiveUser)
+  assign(paste0("spearmanMatrix", dataSetVar), spearmanMatrix)
+  
+  #Namen in die Vektoren fuern den spaeteren Zugriff eintragen
+  userMatrixNames <- c(userMatrixNames, paste0("userMatrix", dataSetVar))
+  uDataActiveUserNames <- c(uDataActiveUserNames, paste0("uDataActiveUser", dataSetVar))
+  spearmanMatrixNames <- c(spearmanMatrixNames, paste0("spearmanMatrix", dataSetVar))
+}
+
 
 
 
@@ -150,27 +181,27 @@ fNRR=function(sumResults){
 
 
 
+
+######################## VARIABLEN #############################
+#Wert fuer kNN (Anzahl an Neighbours)
+#kValues = c(2, 3, 5, 10, 20, 50, 100)
+#kValues = c(1682*0.05, 1682*0.10, 1682*0.15, 1682*0.20, 1682*0.25, 1682*0.30, 1682*0.35, 1682*0.40, 1682*0.45, 1682*0.50, 1682*0.55, 1682*0.60, 1682*0.65, 1682*0.70, 1682*0.75, 1682*0.80, 1682*0.85, 1682*0.90, 1682*0.95)
+kValues = c(2, 3, 5, )
+
+
+
+
 ######################## SIMULATION #############################
+#Erzeugen einer Matrix mit allen Namen der Ergebnisvektoren zum spaeteren
+#Zeichnen der Grafiken (Reihenbezeichung = Anzahl Trainingsdatensaetze / 
+#Spaltenbezeichnung = Werte des kValue Vektors)
+resultsNameVector <- matrix(nrow = 5, ncol = length(kValues))
+colnames(resultsNameVector) <- kValues
+rownames(resultsNameVector) <- 1:5
+
 #Einlesen aller relevanter Datensaetze
 for(dataSetVar in 1:5)
 {
-  #Userbewertungen
-  userMatrix <- as.matrix(read.table(file = paste0("ML100k/u", dataSetVar, ".user.items.test.csv"), sep = ";"))
-  
-  #Relevante UserIDs
-  trainingUsers <- read.table(file = paste0("ML100k/u", dataSetVar, ".user.training.csv"), sep = ";")
-  
-  #Teilen von uData in 2 separate Matrizen (1x mit den relevanten UserIDs (Trainingsuser)
-  #und 1x mit den Testusern)
-  uDataActiveUser <- uDataXtab[(rownames(uDataXtab) %in% userMatrix[,1]),]
-  uDataSpearman <- uDataXtab[(rownames(uDataXtab) %in% trainingUsers[,1]),]
-  
-  #Aehnlichkeitsmatrix berechnen (Spearman)
-  spearmanMatrix <- cor(uDataSpearman, use = "pairwise.complete.obs", method="spearman")
-  
-  #Diagonale der Aehnlichkeitsmatrix durch NA ersetzen (aehnlichkeit der Diagonale logischerweise 1,00)
-  diag(spearmanMatrix) = NA
-  
   #Berechnung der Werte fuer den aktuellen Datensatz
   for (kValue in c(kValues, ncol(uDataSpearman))) {
     #Arbeitsvektor leeren
@@ -179,9 +210,9 @@ for(dataSetVar in 1:5)
     #Erzeugen der Werte pro Datensatz und Wert fuer k
     for (userID in as.numeric(rownames(uDataActiveUser))) {
       activeResult <- fVResult(
-        uDataActiveUser,
-        userMatrix,
-        spearmanMatrix,
+        get(uDataActiveUserNames[dataSetVar]),
+        get(userMatrixNames[dataSetVar]),
+        get(spearmanMatrixNames[dataSetVar]),
         kValue,
         userID)
       sumResults <- c(sumResults, activeResult)
@@ -189,6 +220,9 @@ for(dataSetVar in 1:5)
     
     #Ergebnis umbenennen und ablegen
     assign(paste0("sumResults_t", dataSetVar, "_k", kValue), sumResults)
+    
+    #Name des Ergebnisvektors in resultsNameVector ablegen
+    resultsNameVector[dataSetVar, which(as.numeric(colnames(resultsNameVector)) == kValue)] <- paste0("sumResults_t", dataSetVar, "_k", kValue)
   }
 }
 
@@ -201,6 +235,10 @@ lines(fROC(sumResults))
 fAUC(sumResults) # in Prozent
 fNRR(sumResults) # in Prozent
 
+#for (i in 1:5) {
+#  do.call("rbind", )
+#}
+
 
 #Erstellen der ROC-Kurven
 plotColors = c("sandybrown", "blue", "green", "tomato", "steelblue", "burlywood3", "magenta3", "black")
@@ -208,10 +246,10 @@ plot(NULL, xlim=c(0,1), ylim=c(0,1), main="ROC curve (T5)", ylab="True Postitive
 lines(fROC(sumResults_t5_k2), col=plotColors[1])
 lines(fROC(sumResults_t5_k3), col=plotColors[2])
 lines(fROC(sumResults_t5_k5), col=plotColors[3])
-lines(fROC(sumResults_t5_k10), col=plotColors[4])
-lines(fROC(sumResults_t5_k20), col=plotColors[5])
-lines(fROC(sumResults_t5_k50), col=plotColors[6])
-lines(fROC(sumResults_t5_k100), col=plotColors[7])
+#lines(fROC(sumResults_t5_k10), col=plotColors[4])
+#lines(fROC(sumResults_t5_k20), col=plotColors[5])
+#lines(fROC(sumResults_t5_k50), col=plotColors[6])
+#lines(fROC(sumResults_t5_k100), col=plotColors[7])
 lines(fROC(sumResults_t5_k1682), col=plotColors[8])
 legend(0.8, 0.5, c("k = 2","k = 3","k = 5","k = 10","k = 20","k = 50","k = 100", "k = MAX"), cex=0.8, col=plotColors, lty=1)
 
