@@ -1,0 +1,49 @@
+Paper-Links zum Thema Recommender Systeme + CF:
+
+1 - Evaluating Collaborative Filtering Recommender Systems
+    http://grouplens.org/site-content/uploads/evaluating-TOIS-20041.pdf
+
+2 - Recommender Systems
+    http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.163.3573&rep=rep1&type=pdf
+
+3 - Item-based Collaborative Filtering aus der Perspektive des Customer Relationship Managements
+    http://michael.hahsler.net/SE/SS2005/papers/Tusek.pdf
+
+4 - Eigentaste: A Constant Time Collaborative Filtering Algorithm  
+    http://goldberg.berkeley.edu/pubs/eigentaste.pdf
+
+5 - Unifying Nearest Neighbors Collaborative Filtering
+    http://win.ua.ac.be/~adrem/bibrem/pubs/verstrepen14kunn.pdf
+
+
+Paper-Links zum Thema KNN:
+
+1 - Reserved CF: A fast collaborative filtering Algorithm using a k-nearest neighbor graph
+    http://www.sciencedirect.com/science/article/pii/S0957417415000068
+    
+2 - Better Prediction of Protein Cellular Localization Sites with the k Nearest Neighbors Classifier
+    http://www.aaai.org/Papers/ISMB/1997/ISMB97-022.pdf
+
+3 - On optimum choice of k in nearest neighbor classification
+    http://www.isical.ac.in/~akghosh/CSDA-2006.pdf
+
+4 - IKNN: Informative K-Nearest Neighbor Pattern Classification
+    http://research.microsoft.com/pubs/78960/pkdd07_song.pdf
+    
+5 - MKNN: Modified K-Nearest Neighbor
+    http://www.iaeng.org/publication/WCECS2008/WCECS2008_pp831-834.pdf
+
+6 - http://www.iaeng.org/publication/WCECS2008/WCECS2008_pp831-834.pdf
+    http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6466287
+
+7 - An evolutionary voting for k-nearest neighbours
+    http://ac.els-cdn.com/S095741741500562X/1-s2.0-S095741741500562X-main.pdf?_tid=e9081aba-984b-11e5-84e3-00000aab0f27&acdnat=1448988930_c86ce0ac8c38115f0a7f145ea274529f
+
+8 - A new similarity function for selecting neighbors for each target item in collaborative filtering
+    http://ac.els-cdn.com/S0950705112002079/1-s2.0-S0950705112002079-main.pdf?_tid=506f85f0-985e-11e5-8a89-00000aacb361&acdnat=1448996834_51caad6e81b5365c61d615ea7ad37ffe
+
+9 - Improving the speed and stability of the k-nearest neighbors method
+    http://ac.els-cdn.com/S0167865512000578/1-s2.0-S0167865512000578-main.pdf?_tid=35aedab4-9867-11e5-8a10-00000aab0f02&acdnat=1449000655_5e5fa89d4f12ecf5f8a5a6f88fdfdd7f
+    
+10 - Nonparametric Density Estimation Nearest Neighbors , KNN
+    http://www.cs.haifa.ac.il/~rita/ml_course/lectures/KNN.pdf
