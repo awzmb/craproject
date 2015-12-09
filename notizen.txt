@@ -20,3 +20,27 @@ Anweisungen:
 	
 Letzte Fragestellung:
 	-> Welche Filme werden für welchen k-Wert empfohlen?
+
+
+-> Auswertungen
+  -> ROC fuer alle angegebenen k-Werte
+    -> verschiedene linientypen!
+  -> Testuser
+    -> Fuer ausgewaehlte k ("interessante k" selektieren!)
+  -> Proportionalität (Diagramm oder Tabelle)
+    -> keine Prop vorhanden
+    -> NRR monoton fallend
+  -> maximaler AUC Wert (bester k Wert)
+  -> Streuung (fuer maximalen k-Wert)
+  -> AUC Abhängigkeit von NRR
+  -> ROC fuer Prozentwerte -> in bestimmten Schritten (z. B: Cluster 1-5, Cluster 20-50)
+  in Graustufen darstellen
+  
+  -> AUC Werte nicht ohne NRR (mit in Legende aufnehmen)
+  -> Tabelle AUC / NRR fuer k
+  
+  -> Formulierung : "in vorliegendem Falle..."", vorsichtig interpretieren!, KONJUNKTIV!
+  
+  -> So beschreiben, dass es theoretisch ein sachverstaendiger Dritter "rekonstruieren" kann
+  
+  -> Weniger Formeln runterbrechen, Augenmerk auf kNN
