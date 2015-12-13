@@ -32,6 +32,7 @@ Letzte Fragestellung:
     -> NRR monoton fallend
   -> maximaler AUC Wert (bester k Wert)
   -> Streuung (fuer maximalen k-Wert)
+    -> 
   -> AUC Abhängigkeit von NRR
   -> ROC fuer Prozentwerte -> in bestimmten Schritten (z. B: Cluster 1-5, Cluster 20-50)
   in Graustufen darstellen

@@ -64,10 +64,47 @@ legend(0.8, 0.9, paste0("k = ", resultsNameMatrixNames), cex=0.8, col=plotColors
 # Proportionalitaet AUC / NRR
 ########################
 #Erstellen der ROC-Kurven
-plot(NULL, xlim=c(0,20), ylim=c(0,100), main="Proportionality NRR / AUC", ylab=" ", xlab=" ")
-lines(NRRVector, col=plotColors[1])
-lines(AUCVector, col=plotColors[2], type = "b")
-legend(0.8, 0.3, c("NRR", "AUC"), cex=0.8, col=plotColors, lty=1)
+plotColors = c("black", "gray75")
+plot(NULL, xlim=c(0,20), ylim=c(0,100), main="Verhältnis NRR zu AUC", ylab=" ", xlab=" ")
+lines(NRRVector, col=plotColors[1], type = "b")
+lines(AUCVector, col=plotColors[2], type = "h")
+legend(16, 55, c("NRR", "AUC"), cex=0.8, col=plotColors, lty=1)
+
+
+
+########################
+# Kurven fuer jeden dritten k Wert (Ausgabe)
+########################
+#Erstellen der ROC-Kurven
+plotColors = c("gray66", "gray66", "gray66", "gray66", "gray5", "gray5", "gray5", "gray5", "gray36",  "gray36", "gray36", "gray36")
+plot(NULL, xlim=c(0,1), ylim=c(0,1), main="ROC curve for k Nearest Neighbor", ylab="True Postitive Rate", xlab="False Positive Rate")
+#Erzeugen der Linien
+for (i in seq_len(length(sumResultsNameVector[seq(1, length(sumResultsNameVector), 3)]))) {
+  lines(fROC(get(sumResultsNameVector[seq(1, length(sumResultsNameVector), 3)][i])), col=plotColors[i])
+}
+legend(0.8, 0.9, paste0("k = ", resultsNameMatrixNames[seq(1, length(resultsNameMatrixNames), 3)]), cex=0.8, col=plotColors, lty=1)
+
+
+
+
+
+########################
+# Kurven fuer alle k Werte
+########################
+#Erstellen der ROC-Kurven
+plotColors = c("black", "black", "black", "black", "black", "black", "black", "black", "black", "black", "black", "black", "black", "black")
+plot(NULL, xlim=c(0,1), ylim=c(0,1), main="ROC Kurve für k mit Abstand von 5% bis zum maximalen Wert", ylab="True Postitive Rate", xlab="False Positive Rate")
+#Erzeugen der Linien
+for (i in seq_len(length(sumResultsNameVector))) {
+  lines(fROC(get(sumResultsNameVector[i])), col=plotColors[i])
+}
+
+
+
+
+
+
+
 
 as.numeric(names(AUCVector))
 
