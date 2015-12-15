@@ -5,24 +5,24 @@ library(parallel)
 
 ######################## VARIABLEN #############################
 #Wert fuer kNN (Anzahl an Neighbours)
-kValues = c(2, 3, 5, 10, 20, 50, 100)
+kValues = c(2, 3, 5, 10, 20, 50, 100, 1682)
 
 
 
 ######################## AUSWERTUNG #############################
-for (kValue in c(kValues, 1682)) {
+for (kValue in kValues) {
 
     #Erzeugen des Active User Vektors (activeUser) per Aufruf eines
-  #Vektors aus der uDataActiveUser, wobei die userID aus den Zeilennamen
-  #der Matrix abgeleitet wird (z. B. userID 196 = Zeile 35 in 
+  #Vektors aus der uDataActiveUser, wobei die 765 aus den Zeilennamen
+  #der Matrix abgeleitet wird (z. B. 765 196 = Zeile 35 in 
   #uDataActiveUser)
-  activeUser <- uDataActiveUser1[which(rownames(uDataActiveUser1) == userID),]
+  activeUser <- uDataActiveUser1[which(rownames(uDataActiveUser1) == 765),]
   
   #ItemID ermitteln die mit 5 bewertet wurde und auf NA gesetzt werden muss,
   #dazu wird zunaechst die zweite Spalte von userMatrix an der aktuellen UserID
   #(UserID aus DataXtab) abgerufen (Vergleich der UserID mit Spalte 1 aus
   #userMatrix um Wert aus Spalte 2 zu erhalten)
-  activeUser[userMatrix1[which(userMatrix1[,1] == userID), 2]] <- NA
+  activeUser[userMatrix1[which(userMatrix1[,1] == 765), 2]] <- NA
   
   #ERSETZT DURCH KNN
   #Abfragen der Items aus spearmanMatrix, die in activeUser mit ueber 3 bewertet wurden 
@@ -68,7 +68,7 @@ for (kValue in c(kValues, 1682)) {
   #sind (userMatrix in der Zeile UserID i und dann nur die Spalten 2:Ende). Alle Items die nicht
   #in userMatrix fuer diese UserID erscheinen werden auf NA gesetzt, damit die Rangfolge mit den
   #richtigen Bewertungen / Items berechnet wird.
-  activeUserSpearman[!(as.numeric(names(activeUserSpearman)) %in% userMatrix1[(userMatrix[,1] == userID),2:ncol(userMatrix1)])] <- NA
+  activeUserSpearman[!(as.numeric(names(activeUserSpearman)) %in% userMatrix1[(userMatrix1[,1] == 765),2:ncol(userMatrix1)])] <- NA
   
   #Erzeugen der Rangliste aus activeUserSpearman.
   activeUserItemRanking <- as.numeric(names(sort(rank(-activeUserSpearman, na.last = "keep"))[1:10]))
